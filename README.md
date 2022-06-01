@@ -1,2 +1,2 @@
 # betterdiff
-A better linux diff tool
+A better Linux diff tool
