@@ -3,12 +3,12 @@ COPT = -O1
 CFLAGS = -std=c99 $(COPT) -g -Wall -Wextra -Wpedantic -Wconversion
 CFLAGS += -Wstrict-prototypes -Wwrite-strings -Wno-unused-parameter -Werror
 
-bdiff: betterdiff.c
-	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+FILES = betterdiff.c diffutils.c
 
-FILES = bdiff
+bdiff: $(FILES)
+	$(CC) $(CFLAGS) $(FILES) -o $@ $(LDLIBS)
 
 .PHONY: clean
 clean:
-	-rm -f *.tar *~ *.o *.bc *.ll
-	-rm -f $(FILES)
+	-rm -rf *.tar *~ *.o *.bc *.ll *.out *.dSYM *.gch
+	-rm bdiff
