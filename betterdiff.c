@@ -39,13 +39,14 @@ directories to compare\n");
 
 	if (numArgs != 2 || other || help) {
 		printf(helpMessage);
-		exit(0);
+		exit(EXIT_SUCCESS);
 	}
 
 	char *file1 = argv[optind];
 	char *file2 = argv[optind + 1];
 	
-	runDiff(file1, file2, recursive);
+	bool ok = runDiff(file1, file2, recursive);
+	printf("ok = %d\n", ok);
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
