@@ -87,6 +87,6 @@ typedef struct fileData {
  * @param fileData2 The second file's data
  * @return true if they are equal, false otherwise
  */
-bool eq(fileData_t *fileData1, fileData_t *fileData2);
+bool eq(void *fileData1, void *fileData2);
 
 #endif

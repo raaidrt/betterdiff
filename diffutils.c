@@ -1,6 +1,7 @@
 #include "diffutils.h"
 #include "diffutilsHelpers.h"
 #include <errno.h>
+#include "lcsslib/lcss.h"
 
 const char pink[] = "\033[0;31m"; 
 const char cyan[] = "\033[0;36m";
@@ -97,19 +98,22 @@ void freeLines(line_t *lines) {
  * @param lines the linked list to copy from
  * @param numLines the number of lines in the linked list
  */
-void copyToArr(lineData_t **data, line_t *lines, size_t numLines) {
+void copyToArr(FILE *file, void **data, line_t *lines, size_t numLines) {
 	size_t i = 0;
 	for (line_t *ptr = lines; ptr != NULL; ptr = ptr->next) {
 		if (i >= numLines) {
 			fprintf(stderr, "Trying to copy more lines than are present\n");
 		}
-		data[i] = malloc(sizeof(lineData_t));
+		data[i] = malloc(sizeof(fileData_t *));
 		if (data[i] == NULL) {
 			fprintf(stderr, "Malloc error\n");
 			exit(EXIT_FAILURE);
 		}
-		data[i]->length = ptr->length;
-		data[i]->pos = ptr->pos;
+		fileData_t **fileData = (fileData_t **)data;
+		fileData[i]->file = file;
+		fileData[i]->data = malloc(sizeof(fileData_t));
+		fileData[i]->data->length = lines->length;
+		fileData[i]->data->pos = lines->pos;
 		i++;
 	}
 }
@@ -120,8 +124,10 @@ void copyToArr(lineData_t **data, line_t *lines, size_t numLines) {
  * @param data the array to free
  * @param numLines the number of lines in the array
  */
-void freeArr(lineData_t **data, size_t numLines) {
+void freeArr(void **data, size_t numLines) {
 	for (size_t i = 0; i < numLines; i++) {
+		fileData_t *fileData = data[i];
+		free(fileData->data);
 		free(data[i]);
 	}
 	free(data);
@@ -134,7 +140,9 @@ void freeArr(lineData_t **data, size_t numLines) {
  * @param fileData2 The second file's data
  * @return true if they are equal, false otherwise
  */
-bool eq(fileData_t *fileData1, fileData_t *fileData2) {
+bool eq(void *fileData1Vd, void *fileData2Vd) {
+	fileData_t *fileData1 = (fileData_t *)fileData1Vd;
+	fileData_t *fileData2 = (fileData_t *)fileData2Vd;
 	FILE *file1 = fileData1->file;
 	lineData_t *data1 = fileData1->data;
 	FILE *file2 = fileData2->file;
@@ -188,11 +196,20 @@ bool runDiff(char *file1, char *file2, bool recursive) {
 	size_t numLinesFile1 = countLines(file1Lines);
 	size_t numLinesFile2 = countLines(file2Lines);
 	
-	lineData_t **lines1Data = calloc(numLinesFile1, sizeof(lineData_t *));
-	lineData_t **lines2Data = calloc(numLinesFile2, sizeof(lineData_t *));
+	void **lines1Data = calloc(numLinesFile1, sizeof(void *));
+	void **lines2Data = calloc(numLinesFile2, sizeof(void *));
 
-	copyToArr(lines1Data, file1Lines, numLinesFile1);
-	copyToArr(lines2Data, file1Lines, numLinesFile1);
+	copyToArr(file1Opened, lines1Data, file1Lines, numLinesFile1);
+	copyToArr(file2Opened, lines2Data, file1Lines, numLinesFile1);
+	
+	bool *inLcss1, *inLcss2;
+	void **lcssArrPtr;
+	size_t lcssLen;
+	bool ok = lcss(lines1Data, &inLcss1, numLinesFile1, lines2Data, &inLcss2, 
+		numLinesFile2, &eq, &lcssArrPtr, &lcssLen);
+	
+	if (ok)
+		printf("LCSS Completed successfully\n");
 	
 	freeLines(file1Lines);
 	freeLines(file2Lines);
