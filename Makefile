@@ -8,23 +8,35 @@ LIB_FILES = diffutils.c lcsslib/lcss.c
 
 bdiff: $(FILES)
 	$(CC) $(CFLAGS) $(FILES) $(LIB_FILES) -o $@ $(LDLIBS)
-
-TEST_FILES = testLineData
-
+.SILENT: clean
 .PHONY: clean
 clean:
 	-rm -rf *.tar *~ *.o *.bc *.ll *.out *.dSYM *.gch
 	-rm -f bdiff
-	-rm -f $(TEST_FILES)
 	-rm -f test
 
-testLineData: tests/testLineData.c
-	$(CC) $(CFLAGS) $^ $(LIB_FILES) -o $@ $(LDLIBS)
+.SILENT: testLcss.out
+.PHONY: testLcss.out
+testLcss.out: tests/testLcss.c
+	-echo -n 'TESTING $@.......'
+	-$(CC) $(CFLAGS) $^ $(LIB_FILES) -o $@ $(LDLIBS)
+	-./$@
 
-.PHONY: test
-test: $(TEST_FILES)
+.SILENT: testLineData.out
+.PHONY: testLineData.out
+testLineData.out: tests/testLineData.c
+	-echo -n 'TESTING $@.......'
+	-$(CC) $(CFLAGS) $^ $(LIB_FILES) -o $@ $(LDLIBS)
+	-./$@
+	-diff tests/testData tests/cmpFiles
+
+TEST_REQS = setup testLineData.out testLcss.out
+
+.SILENT: setup
+.PHONY: setup
+setup: 
 	-rm -rf tests/cmpFiles
 	-mkdir tests/cmpFiles
-	- ./$(TEST_FILES)
-	-diff tests/testData tests/cmpFiles
-	
+.SILENT: test
+.PHONY: test
+test: $(TEST_REQS)

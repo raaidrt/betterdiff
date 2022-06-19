@@ -7,6 +7,8 @@ const char pink[] = "\033[0;31m";
 const char cyan[] = "\033[0;36m";
 const char reset[] = "\033[0m";
 
+const ssize_t OVERFLOW_MASK = 0x1L << 63;
+
 /**
  * @brief Changes the terminal to print pink text
  */
@@ -69,11 +71,10 @@ line_t *traverseFile(FILE *file) {
  * @param lines the linked list pointer
  * @return the number of lines
  */
-size_t countLines(line_t *lines) {
-	size_t result = 0;
-	for (line_t *ptr = lines; ptr != NULL; ptr = ptr->next) {
+ssize_t countLines(line_t *lines) {
+	ssize_t result = 0;
+	for (line_t *ptr = lines; ptr != NULL; ptr = ptr->next) 
 		result++;
-	}
 	return result;
 }
 
@@ -98,8 +99,8 @@ void freeLines(line_t *lines) {
  * @param lines the linked list to copy from
  * @param numLines the number of lines in the linked list
  */
-void copyToArr(FILE *file, void **data, line_t *lines, size_t numLines) {
-	size_t i = 0;
+void copyToArr(FILE *file, void **data, line_t *lines, ssize_t numLines) {
+	ssize_t i = 0;
 	for (line_t *ptr = lines; ptr != NULL; ptr = ptr->next) {
 		if (i >= numLines) {
 			fprintf(stderr, "Trying to copy more lines than are present\n");
@@ -124,8 +125,8 @@ void copyToArr(FILE *file, void **data, line_t *lines, size_t numLines) {
  * @param data the array to free
  * @param numLines the number of lines in the array
  */
-void freeArr(void **data, size_t numLines) {
-	for (size_t i = 0; i < numLines; i++) {
+void freeArr(void **data, ssize_t numLines) {
+	for (ssize_t i = 0; i < numLines; i++) {
 		fileData_t *fileData = data[i];
 		free(fileData->data);
 		free(data[i]);
@@ -147,9 +148,8 @@ bool eq(void *fileData1Vd, void *fileData2Vd) {
 	lineData_t *data1 = fileData1->data;
 	FILE *file2 = fileData2->file;
 	lineData_t *data2 = fileData2->data;
-	if (data1->length != data2->length) {
+	if (data1->length != data2->length) 
 		return false;
-	}
 	char *res1;
 	char *res2;
 	char buf1[BUF_SIZE];
@@ -193,18 +193,25 @@ bool runDiff(char *file1, char *file2, bool recursive) {
 	line_t *file1Lines = traverseFile(file1Opened);
 	line_t *file2Lines = traverseFile(file2Opened);
 	
-	size_t numLinesFile1 = countLines(file1Lines);
-	size_t numLinesFile2 = countLines(file2Lines);
+	ssize_t numLinesFile1 = countLines(file1Lines);
+	ssize_t numLinesFile2 = countLines(file2Lines);
 	
-	void **lines1Data = calloc(numLinesFile1, sizeof(void *));
-	void **lines2Data = calloc(numLinesFile2, sizeof(void *));
+
+	if (numLinesFile1 < 0 || numLinesFile2 < 0) {
+		fprintf(stderr, "Overflow in signed to unsigned conversion line=%d\n", 
+			__LINE__);
+		exit(EXIT_FAILURE);
+	}
+
+	void **lines1Data = calloc((size_t)numLinesFile1, sizeof(void *));
+	void **lines2Data = calloc((size_t)numLinesFile2, sizeof(void *));
 
 	copyToArr(file1Opened, lines1Data, file1Lines, numLinesFile1);
 	copyToArr(file2Opened, lines2Data, file1Lines, numLinesFile1);
 	
 	bool *inLcss1, *inLcss2;
 	void **lcssArrPtr;
-	size_t lcssLen;
+	ssize_t lcssLen;
 	bool ok = lcss(lines1Data, &inLcss1, numLinesFile1, lines2Data, &inLcss2, 
 		numLinesFile2, &eq, &lcssArrPtr, &lcssLen);
 	

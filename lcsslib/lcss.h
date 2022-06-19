@@ -23,7 +23,7 @@ typedef bool (*eq_fn)(void *, void *);
  *  (needs to be freed by user)
  * @param[out] lcssLen Pointer to the length of the longest common subsequence
  */
-bool lcss(void **seq1, bool **inLcss1, size_t n1, void **seq2, bool **inLcss2, 
-	size_t n2, eq_fn eq, void ***lcssArrPtr, size_t *lcssLen);
+bool lcss(void **seq1, bool **inLcss1, ssize_t n1, void **seq2, bool **inLcss2, 
+	ssize_t n2, eq_fn eq, void ***lcssArrPtr, ssize_t *lcssLen);
 
 #endif

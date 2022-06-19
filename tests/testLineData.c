@@ -34,7 +34,7 @@ void writeToNewFile(FILE *fileFrom, const char *newFileName, line_t *lines) {
 	fclose(fileTo);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
 	FILE *file = fopen("tests/testData/shakespeare.txt", "r");
 	if (file == NULL) {
 		fprintf(stderr, "Cannot open file\n");
@@ -44,4 +44,5 @@ int main(void) {
 	writeToNewFile(file, "tests/cmpFiles/shakespeare.txt", lines);
 	freeLines(lines);
 	fclose(file);
+	printf("PASSED\n");
 }

@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include "lcss.h"
 
-size_t max(size_t n1, size_t n2) {
+ssize_t max(ssize_t n1, ssize_t n2) {
 	if (n1 > n2) 
 		return n1;
 	else
@@ -26,23 +26,28 @@ size_t max(size_t n1, size_t n2) {
  *  (needs to be freed by user)
  * @param[out] lcssLen Pointer to the length of the longest common subsequence
  */
-bool lcss(void **seq1, bool **inLcss1, size_t n1, void **seq2, bool **inLcss2, 
-	size_t n2, eq_fn eq, void ***lcssArrPtr, size_t *lcssLen) {
+bool lcss(void **seq1, bool **inLcss1, ssize_t n1, void **seq2, bool **inLcss2, 
+	ssize_t n2, eq_fn eq, void ***lcssArrPtr, ssize_t *lcssLen) {
 	// First find the length of the longest common subsequence
-	size_t **dp = calloc(n1 + 1, sizeof(size_t *));
-	for (size_t i = 0; i <= n1; i++) {
-		dp[i] = calloc(n2 + 1, sizeof(size_t));
+	if (n1 < 0 || n2 < 0) {
+		fprintf(stderr, "Overflow in signed to unsigned conversion line=%d\n", 
+			__LINE__);
+		exit(EXIT_FAILURE);
+	}
+	ssize_t **dp = calloc(((size_t)n1) + 1, sizeof(size_t *));
+	for (ssize_t i = 0; i <= n1; i++) {
+		dp[i] = calloc(((size_t)n2) + 1, sizeof(size_t));
 		if (dp[i] == NULL) {
-			for (size_t j = i - 1; j >= 0; j--) {
+			for (ssize_t j = i - 1; j >= 0; j--) {
 				free(dp[j]);
 			}
 			free(dp);
 			return false;
 		}
 	}
-	for (size_t i = 1; i <= n1; i++) {
-		for (size_t j = 1; j <= n2; j++) {
-			if ((*eq)(seq1[i], seq2[j]))
+	for (ssize_t i = 1; i <= n1; i++) {
+		for (ssize_t j = 1; j <= n2; j++) {
+			if ((*eq)(seq1[i - 1], seq2[j - 1]))
 				dp[i][j] = dp[i - 1][j - 1] + 1;
 			else
 				dp[i][j] = max(dp[i - 1][j], dp[i][j - 1]);
@@ -52,16 +57,21 @@ bool lcss(void **seq1, bool **inLcss1, size_t n1, void **seq2, bool **inLcss2,
 		*lcssLen = dp[n1][n2];
 	
 	// Now find the actual longest common subsequence with help from DP array
+	if (dp[n1][n2] < 0) {
+		fprintf(stderr, "Overflow in signed to unsigned conversion line=%d\n", 
+			__LINE__);
+		exit(EXIT_FAILURE);
+	}
 	if (lcssArrPtr != NULL)
-		*lcssArrPtr = calloc(*lcssLen, sizeof(void *));
-	size_t i = n1;
-	size_t j = n2;
-	size_t k = dp[n1][n2] - 1;
+		*lcssArrPtr = calloc((size_t)dp[n1][n2], sizeof(void *));
+	ssize_t i = n1;
+	ssize_t j = n2;
+	ssize_t k = dp[n1][n2] - 1;
 
 	if (inLcss1 != NULL) {
-		*inLcss1 = calloc(n1, sizeof(bool));
+		*inLcss1 = calloc((size_t)n1, sizeof(bool));
 		if (*inLcss1 == NULL) {
-			for (size_t i = 0; i <= n1; i++) {
+			for (ssize_t i = 0; i <= n1; i++) {
 				free(dp[i]);
 			}
 			free(dp);
@@ -70,9 +80,9 @@ bool lcss(void **seq1, bool **inLcss1, size_t n1, void **seq2, bool **inLcss2,
 	}
 
 	if (inLcss2 != NULL) {
-		*inLcss2 = calloc(n2, sizeof(bool));
+		*inLcss2 = calloc((size_t)n2, sizeof(bool));
 		if (*inLcss2 == NULL) {
-			for (size_t i = 0; i <= n2; i++) {
+			for (ssize_t i = 0; i <= n2; i++) {
 				free(dp[i]);
 			}
 			free(dp);
@@ -84,22 +94,22 @@ bool lcss(void **seq1, bool **inLcss1, size_t n1, void **seq2, bool **inLcss2,
 	
 	while (k >= 0) {
 		if ((*eq)(seq1[i - 1], seq2[j - 1])) {
-			if (lcssArrPtr != NULL)
+			if (lcssArrPtr != NULL) 
 				(*lcssArrPtr)[k] = seq1[i - 1];
 			i--;
 			if (inLcss1 != NULL)
 				(*inLcss1)[i] = true;
 			j--;
 			if (inLcss2 != NULL)
-				(*inLcss2)[i] = true;
+				(*inLcss2)[j] = true;
 			k--;
-		} else if (dp[i - 1][j] > dp[j - 1][i]) {
+		} else if (dp[i - 1][j] > dp[i][j - 1]) {
 			i--;
 		} else {
 			j--;
 		}
 	}
-	for (size_t i = 0; i <= n1; i++) {
+	for (ssize_t i = 0; i <= n1; i++) {
 		free(dp[i]);
 	}
 	free(dp);
